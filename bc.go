@@ -8,13 +8,20 @@ import (
 	"os"
 	"strings"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/kylelemons/go-gypsy/yaml"
 	"github.com/patpatnz/BlackCrystal/internal/core"
 
+	_ "github.com/patpatnz/BlackCrystal/internal/cmds/action"
+	_ "github.com/patpatnz/BlackCrystal/internal/cmds/apt"
 	_ "github.com/patpatnz/BlackCrystal/internal/cmds/assert"
 	_ "github.com/patpatnz/BlackCrystal/internal/cmds/copy"
+	_ "github.com/patpatnz/BlackCrystal/internal/cmds/docker"
 	_ "github.com/patpatnz/BlackCrystal/internal/cmds/file"
+	_ "github.com/patpatnz/BlackCrystal/internal/cmds/get_url"
+	_ "github.com/patpatnz/BlackCrystal/internal/cmds/lineinfile"
+	_ "github.com/patpatnz/BlackCrystal/internal/cmds/pip"
+	_ "github.com/patpatnz/BlackCrystal/internal/cmds/service"
+	_ "github.com/patpatnz/BlackCrystal/internal/cmds/shell"
 	_ "github.com/patpatnz/BlackCrystal/internal/cmds/template"
 	_ "github.com/patpatnz/BlackCrystal/internal/cmds/user"
 )
@@ -62,6 +69,10 @@ func processRoleFile(role *Role, dir, fileName string) error {
 						task.Tags = strings.Split(s, " ")
 					case "notify":
 						task.Tags = strings.Split(s, " ")
+					case "when":
+						// do something
+					case "args":
+					case "with_items":
 					default:
 						if !task.Command {
 							if err := core.CommandLookup(k); err != nil {
@@ -86,7 +97,7 @@ func processRoleFile(role *Role, dir, fileName string) error {
 }
 
 func loadRoles() error {
-	baseDIR := "/Users/pjs/Projects/GO/src/github.com/bnsl/buddyguard/ansible/roles"
+	baseDIR := "/Users/pjs/GO/src/github.com/bnsl/buddyguard/ansible/roles"
 
 	rolefiles, err := ioutil.ReadDir(baseDIR)
 	if err != nil {
@@ -101,7 +112,7 @@ func loadRoles() error {
 
 		role := &Role{Tasks: make([]*Task, 0)}
 		err := processRoleFile(role, startFile, "main.yml")
-		spew.Dump(role)
+		//		spew.Dump(role)
 		if err != nil {
 			return err
 		}
@@ -112,7 +123,6 @@ func loadRoles() error {
 
 		//		spew.Dump(v)
 
-		return nil
 	}
 
 	return nil
