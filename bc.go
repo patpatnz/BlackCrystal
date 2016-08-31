@@ -2,14 +2,13 @@ package main
 
 import (
 	// Command plugins
-	"fmt"
+
 	"io/ioutil"
 	"log"
-	"os"
-	"strings"
 
-	"github.com/kylelemons/go-gypsy/yaml"
+	"github.com/davecgh/go-spew/spew"
 	"github.com/patpatnz/BlackCrystal/internal/core"
+	"github.com/patpatnz/BlackCrystal/internal/hosts"
 
 	_ "github.com/patpatnz/BlackCrystal/internal/cmds/action"
 	_ "github.com/patpatnz/BlackCrystal/internal/cmds/apt"
@@ -18,6 +17,7 @@ import (
 	_ "github.com/patpatnz/BlackCrystal/internal/cmds/docker"
 	_ "github.com/patpatnz/BlackCrystal/internal/cmds/file"
 	_ "github.com/patpatnz/BlackCrystal/internal/cmds/get_url"
+	_ "github.com/patpatnz/BlackCrystal/internal/cmds/hostname"
 	_ "github.com/patpatnz/BlackCrystal/internal/cmds/lineinfile"
 	_ "github.com/patpatnz/BlackCrystal/internal/cmds/pip"
 	_ "github.com/patpatnz/BlackCrystal/internal/cmds/service"
@@ -25,76 +25,6 @@ import (
 	_ "github.com/patpatnz/BlackCrystal/internal/cmds/template"
 	_ "github.com/patpatnz/BlackCrystal/internal/cmds/user"
 )
-
-type Task struct {
-	Name    string
-	Command bool //core.CommandIntf
-	Tags    []string
-}
-
-type Role struct {
-	Tasks []*Task
-}
-
-func processRoleFile(role *Role, dir, fileName string) error {
-
-	log.Print(fileName)
-	dat, err := os.Open(dir + "/" + fileName)
-	if err != nil {
-		return err
-	}
-
-	v, err := yaml.Parse(dat)
-	if w, ok := v.(yaml.List); ok {
-		for _, y := range w {
-			if g, ok := y.(yaml.Map); ok {
-				task := &Task{}
-				add := true
-				for k, v := range g {
-					log.Printf("k = %s, v = %v", k, v)
-					s := ""
-					if q, ok := v.(yaml.Scalar); ok {
-						s = string(q)
-					}
-					switch k {
-					case "include":
-						err = processRoleFile(role, dir, string(s))
-						if err != nil {
-							return err
-						}
-						add = false
-					case "name":
-						task.Name = s
-					case "tags":
-						task.Tags = strings.Split(s, " ")
-					case "notify":
-						task.Tags = strings.Split(s, " ")
-					case "when":
-						// do something
-					case "args":
-					case "with_items":
-					default:
-						if !task.Command {
-							if err := core.CommandLookup(k); err != nil {
-								return fmt.Errorf("No such command: %s", k)
-							}
-							//							task.Command := core.CommandCreate(s)
-							task.Command = true
-						} else {
-							return fmt.Errorf("Blarg: %s", k)
-						}
-					}
-				}
-				if add {
-					role.Tasks = append(role.Tasks, task)
-				}
-			}
-		}
-	}
-	log.Printf("Finished %s", fileName)
-
-	return nil
-}
 
 func loadRoles() error {
 	baseDIR := "/Users/pjs/GO/src/github.com/bnsl/buddyguard/ansible/roles"
@@ -110,38 +40,28 @@ func loadRoles() error {
 		log.Printf("Loading role %s:", v.Name())
 		startFile := baseDIR + "/" + v.Name() + "/tasks"
 
-		role := &Role{Tasks: make([]*Task, 0)}
-		err := processRoleFile(role, startFile, "main.yml")
-		//		spew.Dump(role)
+		role, err := core.NewRoleFromFile(startFile + "/main.yml")
+		spew.Dump(role)
 		if err != nil {
 			return err
 		}
-
-		//for _, y := range v {
-		//	_ = y
-		//}
-
-		//		spew.Dump(v)
-
 	}
 
 	return nil
 }
 
 func main() {
-	err := core.CommandLookup("user")
-	if err != nil {
-		log.Print(err)
-	}
-	/*
-		b := make(map[string]interface{})
-		in, _ := ioutil.ReadFile("script.yaml")
 
-		yaml.Unmarshal(in, b)
-	*/
-	err = loadRoles()
+	myhosts, err := hosts.NewFromFile("/Users/pjs/GO/src/github.com/bnsl/buddyguard/ansible/hosts")
 	if err != nil {
-		log.Print(err)
-		return
+		log.Fatal(err)
 	}
+
+	_ = myhosts
+
+	/*	err = loadRoles()
+		if err != nil {
+			log.Print(err)
+			return
+		}*/
 }
