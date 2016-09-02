@@ -7,13 +7,17 @@ import (
 	"log"
 	"os"
 	"strings"
+	"sync"
 )
 
 var (
-	ErrLineTooLong = errors.New("Encountered a line that is too long while parsing the hosts file")
+	ErrLineTooLong    = errors.New("Encountered a line that is too long while parsing the hosts file")
+	ErrInvalidVarPair = errors.New("Invalid var pair, should be x=y")
+	ErrHostFormat     = errors.New("Host line format error")
 )
 
 type hostsFile struct {
+	sync.Mutex
 	Hosts  map[string]*Host
 	Groups map[string]*Group
 }
@@ -25,6 +29,37 @@ func newHostFile() *hostsFile {
 	}
 }
 
+func (h *hostsFile) newHost(hostname string, group *Group) *Host {
+	host := &Host{
+		Name:   hostname,
+		Groups: make(map[string]*Group),
+		Vars:   make(map[string]interface{}),
+	}
+
+	h.Lock()
+	defer h.Unlock()
+
+	h.Hosts[hostname] = host
+
+	return host
+}
+
+func (h *hostsFile) newGroup(name string) *Group {
+	g := &Group{
+		Name:  name,
+		Hosts: make(map[string]*Host),
+		Vars:  make(map[string]interface{}),
+	}
+
+	h.Lock()
+	defer h.Unlock()
+
+	h.Groups[name] = g
+
+	return g
+}
+
+// NewFromFile loads a traditional ansible hosts file
 func NewFromFile(filename string) (Hosts, error) {
 	hf := newHostFile()
 
@@ -35,7 +70,7 @@ func NewFromFile(filename string) (Hosts, error) {
 
 	lines := bufio.NewReader(in)
 
-	var myGroup *Group = nil
+	var myGroup *Group
 	var inVars = false
 
 	for {
@@ -60,14 +95,34 @@ func NewFromFile(filename string) (Hosts, error) {
 			}
 			ok := false
 			if _, ok = hf.Groups[groupName]; !ok {
-				hf.Groups[groupName] = &Group{}
+				myGroup = hf.newGroup(groupName)
 			}
-			myGroup = hf.Groups[groupName]
 			continue
-		} else {
-			log.Printf("line")
-			_ = myGroup
-			_ = inVars
+		} else if len(line) != 0 && line[0] != '#' {
+			if inVars {
+				// process vars in format x=y
+				s := strings.Split(line, "=")
+				if len(s) != 2 {
+					return nil, ErrInvalidVarPair
+				}
+				k := strings.Trim(s[0], " ")
+				v := strings.Trim(s[1], " ")
+				myGroup.Vars[k] = v
+			} else {
+				fields := strings.Fields(line)
+				if len(fields) < 1 {
+					return nil, ErrHostFormat
+				}
+				if host, ok := hf.Hosts[fields[0]]; ok {
+					host.setVars(fields[1:])
+					if myGroup != nil {
+						host.addToGroup(myGroup)
+					}
+				} else {
+					host := hf.newHost(fields[0], myGroup)
+					host.setVars(fields[1:])
+				}
+			}
 		}
 		if err != nil && err == io.EOF {
 			return hf, nil
@@ -75,14 +130,21 @@ func NewFromFile(filename string) (Hosts, error) {
 	}
 }
 
-func (h hostsFile) GetHosts(keyword string) ([]*Host, error) {
+func (h *hostsFile) GetHosts(keyword string) []*Host {
+	h.Lock()
+	defer h.Unlock()
 	if h, ok := h.Hosts[keyword]; ok {
 		r := make([]*Host, 1)
 		r[0] = h
-		return r, nil
+		return r
 	}
-	if g, ok := h.Groups[keyword]; ok {
-		return g.Hosts, nil
+	if _, ok := h.Groups[keyword]; ok {
+		b := make([]*Host, len(h.Hosts))
+		i := 0
+		for x := range h.Hosts {
+			b[i] = h.Hosts[x]
+		}
+		return b
 	}
-	return nil, nil
+	return make([]*Host, 0)
 }

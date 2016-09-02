@@ -52,7 +52,7 @@ func loadRoles() error {
 
 func main() {
 
-	myhosts, err := hosts.NewFromFile("/Users/pjs/GO/src/github.com/bnsl/buddyguard/ansible/hosts")
+	myhosts, err := hosts.NewFromFile("/Users/pjs/Projects/GO/src/github.com/bnsl/buddyguard/ansible/hosts")
 	if err != nil {
 		log.Fatal(err)
 	}
