@@ -8,6 +8,7 @@ import (
 	"github.com/patpatnz/BlackCrystal/internal/hosts"
 )
 
+// Transport defines the interface to transport connctions to a host
 type Transport interface {
 	GetName() string
 	GetInstance(host *hosts.Host) (Transport, error)
@@ -27,6 +28,7 @@ var (
 	ErrNoSuchTransport = errors.New("Specified transport type does not exist")
 )
 
+// Register registeres a tranport type
 func Register(transport Transport) error {
 	availableTransportsLock.Lock()
 	defer availableTransportsLock.Unlock()
@@ -39,6 +41,7 @@ func Register(transport Transport) error {
 	return ErrDuplicatedTransport
 }
 
+// Get requests a new transport instance of name for the host
 func Get(name string, host *hosts.Host) (Transport, error) {
 	availableTransportsLock.Lock()
 	defer availableTransportsLock.Unlock()

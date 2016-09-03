@@ -3,11 +3,9 @@ package main
 import (
 	// Command plugins
 
-	"io/ioutil"
 	"log"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/patpatnz/BlackCrystal/internal/core"
 	"github.com/patpatnz/BlackCrystal/internal/hosts"
 	"github.com/patpatnz/BlackCrystal/internal/hostvars"
 	"github.com/patpatnz/BlackCrystal/internal/job"
@@ -29,30 +27,6 @@ import (
 	_ "github.com/patpatnz/BlackCrystal/internal/cmds/user"
 )
 
-func loadRoles() error {
-	baseDIR := "/Users/pjs/GO/src/github.com/bnsl/buddyguard/ansible/roles"
-
-	rolefiles, err := ioutil.ReadDir(baseDIR)
-	if err != nil {
-		return err
-	}
-	for _, v := range rolefiles {
-		if v.Name() == "." || v.Name() == ".." {
-			continue
-		}
-		log.Printf("Loading role %s:", v.Name())
-		startFile := baseDIR + "/" + v.Name() + "/tasks"
-
-		role, err := core.NewRoleFromFile(startFile + "/main.yml")
-		spew.Dump(role)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
 func main() {
 
 	myhosts, err := hosts.NewFromFile("hosts")
@@ -60,14 +34,15 @@ func main() {
 		log.Fatal(err)
 	}
 
-	h := myhosts.GetHosts("patdb")[0]
+	h := myhosts.GetHosts("patdb")
+	spew.Dump(h)
 
-	tp, err := transport.Get("ssh", h)
+	tp, err := transport.Get("ssh", h[0])
 	if err != nil {
 		return
 	}
 
-	j := &job.Job{Transport: tp, Host: h}
+	j := &job.Job{Transport: tp, Host: h[0]}
 
 	hostvars.Run(j)
 

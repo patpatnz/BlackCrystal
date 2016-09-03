@@ -32,7 +32,7 @@ func (s ssh) GetInstance(host *hosts.Host) (Transport, error) {
 
 func (s *ssh) Connect(host *hosts.Host) error {
 
-	key, err := ioutil.ReadFile("/Users/pjs/.ssh/id_dsa")
+	key, err := ioutil.ReadFile("/Users/pjs/.ssh/id_rsa")
 	if err != nil {
 		log.Fatalf("unable to read private key: %v", err)
 	}

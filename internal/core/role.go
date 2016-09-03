@@ -1,17 +1,44 @@
 package core
 
 import (
+	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/kylelemons/go-gypsy/yaml"
+	"github.com/patpatnz/BlackCrystal/internal/core"
 )
 
 type Role struct {
 	Name  string
 	Tasks []*Task
 	Dir   string
+}
+
+func loadRoles() error {
+	baseDIR := "/Users/pjs/GO/src/github.com/bnsl/buddyguard/ansible/roles"
+
+	rolefiles, err := ioutil.ReadDir(baseDIR)
+	if err != nil {
+		return err
+	}
+	for _, v := range rolefiles {
+		if v.Name() == "." || v.Name() == ".." {
+			continue
+		}
+		log.Printf("Loading role %s:", v.Name())
+		startFile := baseDIR + "/" + v.Name() + "/tasks"
+
+		role, err := core.NewRoleFromFile(startFile + "/main.yml")
+		spew.Dump(role)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func NewRoleFromFile(fileName string) (*Role, error) {
