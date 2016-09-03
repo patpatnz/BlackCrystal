@@ -3,21 +3,6 @@ package core
 import (
 	"errors"
 	"strings"
-
-	_ "github.com/patpatnz/BlackCrystal/internal/cmds/action"
-	_ "github.com/patpatnz/BlackCrystal/internal/cmds/apt"
-	_ "github.com/patpatnz/BlackCrystal/internal/cmds/assert"
-	_ "github.com/patpatnz/BlackCrystal/internal/cmds/copy"
-	_ "github.com/patpatnz/BlackCrystal/internal/cmds/docker"
-	_ "github.com/patpatnz/BlackCrystal/internal/cmds/file"
-	_ "github.com/patpatnz/BlackCrystal/internal/cmds/get_url"
-	_ "github.com/patpatnz/BlackCrystal/internal/cmds/hostname"
-	_ "github.com/patpatnz/BlackCrystal/internal/cmds/lineinfile"
-	_ "github.com/patpatnz/BlackCrystal/internal/cmds/pip"
-	_ "github.com/patpatnz/BlackCrystal/internal/cmds/service"
-	_ "github.com/patpatnz/BlackCrystal/internal/cmds/shell"
-	_ "github.com/patpatnz/BlackCrystal/internal/cmds/template"
-	_ "github.com/patpatnz/BlackCrystal/internal/cmds/user"
 )
 
 // CommandIntf defines the interface that command types must implement

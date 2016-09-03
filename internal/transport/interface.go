@@ -4,11 +4,17 @@ import (
 	"errors"
 	"strings"
 	"sync"
+
+	"github.com/patpatnz/BlackCrystal/internal/hosts"
 )
 
 type Transport interface {
 	GetName() string
-	GetInstance() (Transport, error)
+	GetInstance(host *hosts.Host) (Transport, error)
+
+	Run(cmd string) ([]string, error)
+
+	ReadFile(file string) ([]byte, error)
 }
 
 var (
@@ -33,13 +39,13 @@ func Register(transport Transport) error {
 	return ErrDuplicatedTransport
 }
 
-func Get(name string) (Transport, error) {
+func Get(name string, host *hosts.Host) (Transport, error) {
 	availableTransportsLock.Lock()
 	defer availableTransportsLock.Unlock()
 
 	name = strings.ToLower(name)
 	if t, ok := availableTransports[name]; ok {
-		return t.GetInstance()
+		return t.GetInstance(host)
 	}
 	return nil, ErrNoSuchTransport
 }
